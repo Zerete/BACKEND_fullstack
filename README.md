@@ -1,56 +1,60 @@
-🐾 Sanos y Salvos - Plataforma de Localización de Mascotas
-Sanos y Salvos es una aplicación web diseñada para facilitar la búsqueda y reporte de mascotas perdidas en la comunidad. Este proyecto fue desarrollado como parte de la Evaluación Parcial 2 para la carrera de Ingeniería en Informática en Duoc UC.
+# Sanos y Salvos - Plataforma de Reporte de Mascotas
 
-🚀 Propósito del Proyecto
-El objetivo principal es centralizar los reportes de mascotas perdidas y encontradas en una interfaz intuitiva, accesible y funcional, permitiendo una respuesta rápida de la comunidad ante emergencias veterinarias o extravíos.
+Este proyecto es una aplicación full-stack basada en una **arquitectura de microservicios**, diseñada para la gestión y reporte de mascotas perdidas o encontradas. Desarrollado como parte de la Evaluación 2 para la carrera de Ingeniería en Informática.
 
-✨ Características Principales
-Reporte de Mascotas: Formulario dinámico para registrar mascotas desaparecidas o encontradas.
-Visualización en Tiempo Real: Galería de tarjetas con información clave de los reportes recientes.
-Búsqueda y Filtros: Filtrado por nombre, raza o comuna para agilizar la localización.
-Panel Administrativo (Dashboard): * Gráficas estadísticas de reportes por especie utilizando Recharts.
-Gestión de datos (CRUD) para administradores.
-Sistema de Roles: Acceso diferenciado entre usuarios ciudadanos y administradores.
-Accesibilidad: Paleta de colores optimizada para usuarios con daltonismo (azul y amarillo de alto contraste).
-🛠️ Tecnologías Utilizadas
-Frontend: React.js (Vite)
-Estilos: CSS3 (Variables personalizadas y Diseño Responsivo)
-Gráficas: Recharts
-Testing: Vitest y React Testing Library
-Iconos: Emojis y SVG para optimización de carga.
-📦 Instalación y Configuración
-Sigue estos pasos para ejecutar el proyecto localmente:
+## 🚀 Arquitectura del Sistema
 
-Clonar el repositorio:
+La solución se divide en cuatro componentes principales que interactúan a través de una red local:
 
-git clone [https://github.com/tu-usuario/proyecto-sanos-y-salvos.git](https://github.com/tu-usuario/proyecto-sanos-y-salvos.git)
-cd proyecto-sanos-y-salvos
-Instalar dependencias:
+1.  **Frontend (React + Vite):** Interfaz de usuario dinámica con mapas georreferenciados.
+2.  **BFF / API Gateway (Django):** Orquestador que centraliza las peticiones del frontend y las deriva a los servicios correspondientes.
+3.  **MS Seguridad (Django):** Servicio encargado de la autenticación JWT, registro de usuarios y gestión de roles (RBAC).
+4.  **MS Mascotas (Django):** Servicio de persistencia y lógica de negocio para los reportes de mascotas.
 
-npm install
-Instalar librerías adicionales (si no están):
+## 🛠️ Tecnologías Utilizadas
 
-npm install recharts
-npm install -D vitest jsdom @testing-library/react @testing-library/jest-dom
-Ejecutar en modo desarrollo:
+* **Frontend:** React, Tailwind CSS, Leaflet (Mapas).
+* **Backend:** Python 3.14+, Django, Django REST Framework.
+* **Autenticación:** JSON Web Tokens (JWT).
+* **Control de Versiones:** Git & GitHub.
 
-npm run dev
-Ejecutar pruebas unitarias:
+## 📋 Requisitos Previos
 
-npm test
-🔑 Acceso de Prueba (Credenciales)
-Para probar las funcionalidades de administrador y ver el Dashboard:
+* Python instalado.
+* Node.js para el Frontend.
+* Instalar dependencias en cada microservicio:
+    ```bash
+    pip install django django-cors-headers djangorestframework djangorestframework-simplejwt requests
+    ```
 
-Correo: admin@sanosysalvos.cl
-Contraseña: (Cualquier combinación de caracteres)
-🧪 Calidad de Software (Testing)
-El proyecto incluye una suite de pruebas unitarias que validan:
+## 🔧 Configuración y Ejecución
 
-El renderizado correcto de los componentes clave.
-La seguridad de la sección de comentarios (restricción por login).
-La funcionalidad lógica del CRUD en el Dashboard.
-👨‍💻 Autor
-Estudiantes: luis paredes, luis santa crus, matias medina
-Institución: Duoc UC
-Sede: antonio varas
-Carrera: Ingeniería en Informática
+Para levantar el sistema completo, se deben iniciar los servicios en el siguiente orden:
+
+1.  **Microservicio de Seguridad (Puerto 8002):**
+    ```bash
+    cd ms_seguridad
+    python manage.py runserver 8002
+    ```
+2.  **Microservicio de Mascotas (Puerto 8001):**
+    ```bash
+    cd ms_mascotas
+    python manage.py runserver 8001
+    ```
+3.  **BFF / Gateway (Puerto 8000):**
+    ```bash
+    cd bff_web
+    python manage.py runserver 8000
+    ```
+4.  **Frontend:**
+    ```bash
+    cd frontend
+    npm run dev
+    ```
+
+## 🔐 Gestión de Administradores
+
+Para acceder al panel de administración en el frontend, es necesario crear un superusuario en el servicio de seguridad:
+```bash
+cd ms_seguridad
+python manage.py createsuperuser
