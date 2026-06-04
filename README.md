@@ -52,7 +52,12 @@ Para levantar el sistema completo, se deben iniciar los servicios en el siguient
 4.  **Frontend:**
     ```bash
     cd frontend
-    npm install 
+    npm install
+
+    nvm use 20
+    nvm install 20.20.2
+    nvm use 20.20.2
+    node -v
     npm run dev
     ```
 
