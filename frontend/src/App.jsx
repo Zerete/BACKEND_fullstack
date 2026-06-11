@@ -194,6 +194,8 @@ function ReportsMarkers({ reports, highlightId }) {
     .map((r) => {
       const isHighlight = highlightId != null && r.id === highlightId
       const details = detailsById[r.id] || null
+      const imgUrl = r.image_data_url || details?.image_data_url;
+
       return (
         <Marker
           key={r.id}
@@ -205,8 +207,8 @@ function ReportsMarkers({ reports, highlightId }) {
         >
           <Popup>
             {loadingById[r.id] ? <div className="popupMeta">Cargando…</div> : null}
-            {details?.image_data_url ? (
-              <img className="popupImg" src={details.image_data_url} alt={details.pet_name || 'Mascota'} />
+            {imgUrl ? (
+              <img className="popupImg" src={imgUrl} alt={details?.pet_name || r.pet_name || 'Mascota'} />
             ) : null}
             <div className="popupTitle">
               {r.pet_name ? r.pet_name : 'Mascota sin nombre'} · {r.species || 'Mascota'}
@@ -330,59 +332,68 @@ function RecentReportsCarousel({ title, reports, onMarkFound, onCardClick }) {
         {(reports || []).length === 0 ? (
           <div className="carouselEmpty">Sin reportes recientes</div>
         ) : (
-          (reports || []).map((r) => (
-            <div 
-              key={r.id} 
-              className="carouselCard"
-              onClick={(e) => {
-                if (e.target.tagName !== 'BUTTON') {
-                  onCardClick?.(r.id)
-                }
-              }}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="carouselImgWrap">
-                {detailsById[r.id]?.image_data_url ? (
-                  <img className="carouselImg" src={detailsById[r.id].image_data_url} alt={r.pet_name || 'Mascota'} />
+          (reports || []).map((r) => {
+            const imgUrl = r.image_data_url || detailsById[r.id]?.image_data_url;
+
+            return (
+              <div 
+                key={r.id} 
+                className="carouselCard"
+                onClick={(e) => {
+                  if (e.target.tagName !== 'BUTTON') {
+                    onCardClick?.(r.id)
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="carouselImgWrap" style={{ backgroundColor: '#f8f9fa' }}>
+                  {imgUrl ? (
+                    <img 
+                      className="carouselImg" 
+                      src={imgUrl} 
+                      alt={r.pet_name || 'Mascota'} 
+                      style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+                    />
+                  ) : (
+                    <div className={`carouselImgPlaceholder${loadingById[r.id] ? ' isLoading' : ''}`}>
+                      <div className="carouselImgEmoji" aria-hidden="true">{getSpeciesEmoji(r.species)}</div>
+                    </div>
+                  )}
+                </div>
+                <div className="carouselCardTop">
+                  <div className="carouselCardTitle">
+                    {r.species || 'Mascota'}{r.pet_name ? ` · ${r.pet_name}` : ''}
+                  </div>
+                  <div className="carouselCardMeta">{formatDateShort(r.created_at)}</div>
+                </div>
+                <div className="carouselCardMeta">
+                  {r.comuna || ''}{r.region ? `, ${r.region}` : ''}
+                </div>
+                {r.distance_km != null ? (
+                  <div className="carouselCardMeta">A {Number(r.distance_km).toFixed(1)} km</div>
+                ) : null}
+                {r.description ? <div className="carouselCardDesc">{r.description}</div> : null}
+                {r.status === 'perdido' ? (
+                  <button
+                    className="primaryBtn"
+                    style={{ width: '100%', marginTop: '12px' }}
+                    type="button"
+                    disabled={markingById[r.id]}
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      onMarkFound?.(r.id);
+                    }}
+                  >
+                    {markingById[r.id] ? 'Marcando...' : 'Reportar como encontrado'}
+                  </button>
                 ) : (
-                  <div className={`carouselImgPlaceholder${loadingById[r.id] ? ' isLoading' : ''}`}>
-                    <div className="carouselImgEmoji" aria-hidden="true">{getSpeciesEmoji(r.species)}</div>
+                  <div className="carouselCardMeta" style={{ marginTop: '12px', fontWeight: 'bold', color: '#19a6b6' }}>
+                    ✓ Encontrado
                   </div>
                 )}
               </div>
-              <div className="carouselCardTop">
-                <div className="carouselCardTitle">
-                  {r.species || 'Mascota'}{r.pet_name ? ` · ${r.pet_name}` : ''}
-                </div>
-                <div className="carouselCardMeta">{formatDateShort(r.created_at)}</div>
-              </div>
-              <div className="carouselCardMeta">
-                {r.comuna || ''}{r.region ? `, ${r.region}` : ''}
-              </div>
-              {r.distance_km != null ? (
-                <div className="carouselCardMeta">A {Number(r.distance_km).toFixed(1)} km</div>
-              ) : null}
-              {r.description ? <div className="carouselCardDesc">{r.description}</div> : null}
-              {r.status === 'perdido' ? (
-                <button
-                  className="primaryBtn"
-                  style={{ width: '100%', marginTop: '12px' }}
-                  type="button"
-                  disabled={markingById[r.id]}
-                  onClick={(e) => {
-                    e.stopPropagation(); 
-                    onMarkFound?.(r.id);
-                  }}
-                >
-                  {markingById[r.id] ? 'Marcando...' : 'Reportar como encontrado'}
-                </button>
-              ) : (
-                <div className="carouselCardMeta" style={{ marginTop: '12px', fontWeight: 'bold', color: '#19a6b6' }}>
-                  ✓ Encontrado
-                </div>
-              )}
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </section>
@@ -1015,7 +1026,7 @@ function AdminBackoffice({ user, onLogout, busy }) {
             </Link>
             <Link className={`boNavLink${active('usuarios')}`} to="/admin/usuarios">
               <span className="boNavIcon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" role="presentation"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12Zm0 2c-4.42 0-8 2.35-8 5.25V21h16v-1.75c0-2.9-3.58-5.25-8-5.25Z"/></svg>
+                <svg viewBox="0 0 24 24" role="presentation"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.505 4.505 0 0 0 12 12Zm0 2c-4.42 0-8 2.35-8 5.25V21h16v-1.75c0-2.9-3.58-5.25-8-5.25Z"/></svg>
               </span>
               <span>Usuarios</span>
             </Link>
@@ -1062,6 +1073,297 @@ function AdminBackoffice({ user, onLogout, busy }) {
   )
 }
 
+function ProfilePage({ user, reports, onLogout, busy, onMarkFound, onViewDetail }) {
+  if (!user) {
+    return <Navigate to="/login?next=/perfil" replace />
+  }
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileDesc, setProfileDesc] = useState('Amante de los animales y miembro activo de la comunidad Sanos y Salvos.');
+  const [profilePic, setProfilePic] = useState('');
+  const [detailsById, setDetailsById] = useState({});
+
+  const myReports = useMemo(() => {
+    return (reports || []).filter(r => r.contact_email === user.email);
+  }, [reports, user.email]);
+
+  useEffect(() => {
+    const key = user?.username ? `profile_${user.username}` : null;
+    if (key) {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.desc) setProfileDesc(parsed.desc);
+        if (parsed.pic) setProfilePic(parsed.pic);
+      }
+    }
+  }, [user]);
+
+  function handleSaveProfile() {
+    const key = user?.username ? `profile_${user.username}` : null;
+    if (key) {
+      localStorage.setItem(key, JSON.stringify({ desc: profileDesc, pic: profilePic }));
+    }
+    setIsEditing(false);
+  }
+
+  function onProfilePicChange(e) {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 300;
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        setProfilePic(dataUrl);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  useEffect(() => {
+    const fetchDetails = async () => {
+      const idsToFetch = myReports.map(r => r.id).filter(id => !detailsById[id]);
+      if (idsToFetch.length === 0) return;
+
+      const results = await Promise.allSettled(
+        idsToFetch.map(id => apiRequest(`/api/reports/${id}/`).then(res => ({id, data: res.data})))
+      );
+
+      setDetailsById(prev => {
+        const next = { ...prev };
+        results.forEach(res => {
+          if (res.status === 'fulfilled' && res.value?.data) {
+            next[res.value.id] = res.value.data;
+          }
+        });
+        return next;
+      });
+    };
+    fetchDetails();
+  }, [myReports]);
+
+  function getSpeciesEmoji(species) {
+    const kind = normalizeSpecies(species)
+    if (kind === 'perro') return '🐶'
+    if (kind === 'gato') return '🐱'
+    return '🐾'
+  }
+
+  return (
+    <div className="mainInner">
+      <div style={{ marginBottom: '16px' }}>
+        <Link className="miniBtn" to="/">← Volver al mapa de inicio</Link>
+      </div>
+
+      <section className="card" style={{ padding: '32px', marginBottom: '32px', display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap', backgroundColor: '#f8f9fa' }}>
+        <div style={{ width: '100px', height: '100px', position: 'relative', flexShrink: 0 }}>
+          {profilePic ? (
+            <img src={profilePic} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--teal-500)' }} />
+          ) : (
+            <div style={{ width: '100%', height: '100%', borderRadius: '50%', backgroundColor: 'var(--teal-500)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '3rem', fontWeight: 'bold' }}>
+              {(user.username || 'U').charAt(0).toUpperCase()}
+            </div>
+          )}
+          {isEditing && (
+            <label style={{ position: 'absolute', bottom: -10, left: 0, right: 0, background: 'rgba(0,0,0,0.7)', color: 'white', fontSize: '0.8rem', textAlign: 'center', cursor: 'pointer', padding: '4px', borderRadius: '10px' }}>
+              Subir Foto
+              <input type="file" style={{ display: 'none' }} accept="image/*" onChange={onProfilePicChange} />
+            </label>
+          )}
+        </div>
+
+        <div style={{ flex: '1 1 200px' }}>
+          <h2 style={{ fontSize: '2rem', margin: '0 0 8px 0', color: '#064a55' }}>{user.username}</h2>
+          <p style={{ margin: '0 0 12px 0', color: '#666', fontSize: '1.1rem' }}>{user.email}</p>
+          {isEditing ? (
+            <textarea value={profileDesc} onChange={e => setProfileDesc(e.target.value)} style={{ width: '100%', minHeight: '60px', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '1rem', fontFamily: 'inherit' }} />
+          ) : (
+            <p style={{ margin: 0, fontStyle: 'italic', color: '#444' }}>"{profileDesc}"</p>
+          )}
+        </div>
+
+        <div style={{ flexShrink: 0 }}>
+          {isEditing ? (
+            <button className="primaryBtn" style={{ marginBottom: '12px', width: '100%', display: 'block' }} type="button" onClick={handleSaveProfile}>Guardar Cambios</button>
+          ) : (
+            <button className="miniBtn" style={{ marginBottom: '12px', width: '100%', display: 'block', padding: '10px' }} type="button" onClick={() => setIsEditing(true)}>Editar Perfil</button>
+          )}
+          <button className="primaryBtn" style={{ backgroundColor: '#e03131', border: 'none', width: '100%' }} type="button" disabled={busy} onClick={onLogout}>Cerrar Sesión</button>
+        </div>
+      </section>
+
+      <h2 className="cardTitle" style={{ marginBottom: '20px' }}>Mis Reportes</h2>
+
+      {myReports.length === 0 ? (
+        <div className="card" style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Aún no has reportado ninguna mascota en esta cuenta.</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+          {myReports.map((r) => {
+            const imgUrl = r.image_data_url || detailsById[r.id]?.image_data_url;
+            return (
+              <div key={r.id} className="carouselCard" style={{ margin: 0, width: 'auto', cursor: 'pointer' }} onClick={() => onViewDetail?.(r.id)}>
+                <div className="carouselImgWrap" style={{ backgroundColor: '#f8f9fa' }}>
+                  {imgUrl ? (
+                    <img className="carouselImg" src={imgUrl} alt={r.pet_name || 'Mascota'} style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
+                  ) : (
+                    <div className="carouselImgPlaceholder"><div className="carouselImgEmoji" aria-hidden="true">{getSpeciesEmoji(r.species)}</div></div>
+                  )}
+                </div>
+                <div className="carouselCardTop">
+                  <div className="carouselCardTitle">{r.species || 'Mascota'} · {r.pet_name}</div>
+                  <div className="carouselCardMeta">{formatDateShort(r.created_at)}</div>
+                </div>
+                <div className="carouselCardMeta">{r.comuna || ''}{r.region ? `, ${r.region}` : ''}</div>
+                <div style={{ marginTop: '16px' }}>
+                  {normalizeStatus(r.status) === 'perdido' ? (
+                    <>
+                      <div className="boPill" style={{ background: '#ffe8cc', color: '#f4a340', textAlign: 'center', marginBottom: '12px', display: 'block' }}>🔍 Buscado</div>
+                      <button className="primaryBtn" style={{ width: '100%' }} type="button" disabled={busy} onClick={(e) => { e.stopPropagation(); onMarkFound?.(r.id); }}>Marcar como encontrado</button>
+                    </>
+                  ) : (
+                    <div className="boPill" style={{ background: '#e6fcf5', color: '#19a6b6', textAlign: 'center', display: 'block', padding: '12px' }}>✅ Encontrado</div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+function PreguntasFrecuentesPage({ user, isAdmin }) {
+  const [faqs, setFaqs] = useState(() => {
+    const saved = localStorage.getItem('sys_faqs');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 1, question: '¿Cómo funciona el sistema de confirmación de reportes?', answer: 'Cuando un usuario publica un reporte, este queda guardado en estado pendiente en la base de datos distribuida de Django. El Administrador del Backoffice verifica los datos de ubicación y la imagen para confirmarlo, haciéndolo visible de inmediato en el mapa público de Leaflet.', user_type: 'admin', username: 'luis', created_at: new Date(2026, 5, 1).toISOString() },
+      { id: 2, question: '¿Tiene algún costo publicar un aviso de mascota perdida?', answer: 'No, Sanos y Salvos es una plataforma comunitaria 100% gratuita. Nuestro propósito principal es agilizar las redes de apoyo comunal utilizando tecnologías fullstack de código abierto.', user_type: 'admin', username: 'luis', created_at: new Date(2026, 5, 5).toISOString() },
+      { id: 3, question: '¿Qué debo hacer si avisto una mascota perdida en la calle?', answer: 'Te recomendamos no perderla de vista y presionar la tarjeta de la mascota en el carrusel para ver la ficha técnica. Allí podrás contactar directamente al dueño por teléfono/email o usar el botón para actualizar su estado.', user_type: 'user', username: 'vecino_santiago', created_at: new Date(2026, 5, 10).toISOString() }
+    ];
+  });
+  const [newQuestion, setNewQuestion] = useState('');
+  const [answerTexts, setAnswerTexts] = useState({});
+
+  useEffect(() => {
+    localStorage.setItem('sys_faqs', JSON.stringify(faqs));
+  }, [faqs]);
+
+  function handleSubmitQuestion(e) {
+    e.preventDefault();
+    if (!newQuestion.trim()) return;
+    const newItem = {
+      id: Date.now(),
+      question: newQuestion.trim(),
+      answer: '',
+      user_type: isAdmin ? 'admin' : 'user',
+      username: user ? user.username : 'Anónimo',
+      created_at: new Date().toISOString()
+    };
+    setFaqs([newItem, ...faqs]);
+    setNewQuestion('');
+  }
+
+  function handleSubmitAnswer(id) {
+    const text = answerTexts[id];
+    if (!text || !text.trim()) return;
+    setFaqs(faqs.map(f => f.id === id ? { ...f, answer: text.trim() } : f));
+    setAnswerTexts({ ...answerTexts, [id]: '' });
+  }
+
+  return (
+    <div className="mainInner">
+      <div style={{ marginBottom: '16px' }}>
+        <Link className="miniBtn" to="/">← Volver al mapa de inicio</Link>
+      </div>
+
+      <section className="card">
+        <h2 className="cardTitle" style={{ fontSize: '2rem', color: '#064a55', marginBottom: '8px' }}>Preguntas Frecuentes</h2>
+        <p className="mutedText" style={{ marginBottom: '24px' }}>
+          Consulta las dudas recurrentes de la comunidad o publica tu propia pregunta. Los administradores e integrantes responderán a tu duda.
+        </p>
+
+        
+        <form onSubmit={handleSubmitQuestion} style={{ marginBottom: '40px', background: '#f8f9fa', padding: '20px', borderRadius: '12px', border: '1px solid #e3e6e8' }}>
+          <label className="field" style={{ marginBottom: '12px' }}>
+            <span style={{ fontWeight: 'bold', color: '#064a55' }}>
+              {isAdmin ? '🛡️ Publicar Pregunta Oficial (Modo Administrador)' : '✍️ Escribe tu pregunta'}
+            </span>
+            <input 
+              value={newQuestion}
+              onChange={e => setNewQuestion(e.target.value)}
+              placeholder={user ? "Escribe tu duda o consulta aquí..." : "Inicia sesión para poder publicar preguntas..."}
+              disabled={!user}
+              style={{ padding: '12px' }}
+            />
+          </label>
+          <button type="submit" className="primaryBtn" disabled={!user || !newQuestion.trim()}>
+            Enviar Pregunta
+          </button>
+        </form>
+
+       
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {faqs.map(f => (
+            <div key={f.id} className="card" style={{ borderLeft: f.user_type === 'admin' ? '6px solid var(--teal-500)' : '6px solid #f4a340', padding: '24px', background: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="boPill" style={{ 
+                  background: f.user_type === 'admin' ? '#e6fcf5' : '#fff9db', 
+                  color: f.user_type === 'admin' ? '#19a6b6' : '#f4a340',
+                  fontWeight: 'bold', padding: '4px 10px', borderRadius: '12px', fontSize: '0.85rem'
+                }}>
+                  {f.user_type === 'admin' ? '🛡️ Admin' : '👤 Usuario'} · {f.username}
+                </span>
+                <span className="mutedText" style={{ fontSize: '0.85rem' }}>{formatDateShort(f.created_at)}</span>
+              </div>
+              
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '1.25rem', color: '#064a55', lineHeight: '1.4' }}>{f.question}</h3>
+              
+              {f.answer ? (
+                <div style={{ background: '#f1f3f5', padding: '14px 18px', borderRadius: '8px', borderLeft: '4px solid #19a6b6', marginTop: '10px' }}>
+                  <strong style={{ color: 'var(--teal-500)', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}> Respuesta del Equipo:</strong>
+                  <p style={{ margin: 0, color: '#333', lineHeight: '1.5' }}>{f.answer}</p>
+                </div>
+              ) : (
+                <div style={{ marginTop: '10px' }}>
+                  <span className="mutedText" style={{ fontStyle: 'italic', fontSize: '0.9rem' }}>Esperando respuesta oficial...</span>
+                  {isAdmin && (
+                    <div style={{ marginTop: '14px', display: 'flex', gap: '12px' }}>
+                      <input 
+                        type="text"
+                        placeholder="Escribe la solución/respuesta como administrador..."
+                        value={answerTexts[f.id] || ''}
+                        onChange={e => setAnswerTexts({ ...answerTexts, [f.id]: e.target.value })}
+                        style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '0.95rem' }}
+                      />
+                      <button className="miniBtn" type="button" onClick={() => handleSubmitAnswer(f.id)} disabled={!answerTexts[f.id]?.trim()}>
+                        Responder
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function PublicLayout({ user, isAdmin, busy, onLogout, year }) {
   const location = useLocation()
   if (String(location.pathname || '').includes('admin')) return null
@@ -1076,8 +1378,8 @@ function PublicLayout({ user, isAdmin, busy, onLogout, year }) {
           </Link>
 
           <nav className="siteNav" aria-label="Navegación principal">
-            <Link className="navLink" to="/#inicio">Inicio</Link>
-            <Link className="navLink" to="/#sobre-nosotros">Sobre nosotros</Link>
+            <Link className="navLink" to="/">Inicio</Link>
+            <a className="navLink" href="/#sobre-nosotros">Sobre nosotros</a>
             <Link className="navLink" to="/preguntas-frecuentes">Preguntas frecuentes</Link>
           </nav>
 
@@ -1090,33 +1392,18 @@ function PublicLayout({ user, isAdmin, busy, onLogout, year }) {
                 Admin
               </Link>
             ) : null}
+
             {user ? (
-              <button className="loginBtn" type="button" disabled={busy} onClick={onLogout}>
-                <svg
-                  className="userIcon"
-                  viewBox="0 0 24 24"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.505 4.505 0 0 0 12 12Zm0 2.25c-4.135 0-7.5 2.52-7.5 5.625A1.125 1.125 0 0 0 5.625 21h12.75a1.125 1.125 0 0 0 1.125-1.125c0-3.105-3.365-5.625-7.5-5.625Z"
-                  />
+              <Link className="loginBtn" to="/perfil">
+                <svg className="userIcon" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                  <path fill="currentColor" d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.505 4.505 0 0 0 12 12Zm0 2.25c-4.135 0-7.5 2.52-7.5 5.625A1.125 1.125 0 0 0 5.625 21h12.75a1.125 1.125 0 0 0 1.125-1.125c0-3.105-3.365-5.625-7.5-5.625Z" />
                 </svg>
-                <span>Salir</span>
-              </button>
+                <span style={{ marginLeft: '8px' }}>Mi Perfil</span>
+              </Link>
             ) : (
-              <Link className="loginBtn" to="/login">
-                <svg
-                  className="userIcon"
-                  viewBox="0 0 24 24"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.505 4.505 0 0 0 12 12Zm0 2.25c-4.135 0-7.5 2.52-7.5 5.625A1.125 1.125 0 0 0 5.625 21h12.75a1.125 1.125 0 0 0 1.125-1.125c0-3.105-3.365-5.625-7.5-5.625Z"
-                  />
+              <Link className="loginBtn" to="/login?next=/perfil">
+                <svg className="userIcon" viewBox="0 0 24 24" role="presentation" aria-hidden="true">
+                  <path fill="currentColor" d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.505 4.505 0 0 0 12 12Zm0 2.25c-4.135 0-7.5 2.52-7.5 5.625A1.125 1.125 0 0 0 5.625 21h12.75a1.125 1.125 0 0 0 1.125-1.125c0-3.105-3.365-5.625-7.5-5.625Z" />
                 </svg>
               </Link>
             )}
@@ -1140,73 +1427,40 @@ function PublicLayout({ user, isAdmin, busy, onLogout, year }) {
                 Plataforma comunitaria para reportar mascotas perdidas y ayudar a reencontrarlas.
               </div>
               <div className="footerSocialButtons" aria-label="Redes sociales">
-                <a
-                  className="footerSocialBtn"
-                  href="https://instagram.com/sanosysalvos.cl"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Instagram"
-                  title="Instagram"
-                >
-                  <svg className="footerSocialIcon" viewBox="0 0 24 24" aria-hidden="true" role="presentation">
-                    <path
-                      fill="currentColor"
-                      d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 2A3.75 3.75 0 0 0 4 7.75v8.5A3.75 3.75 0 0 0 7.75 20h8.5A3.75 3.75 0 0 0 20 16.25v-8.5A3.75 3.75 0 0 0 16.25 4h-8.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.6-2.15a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1Z"
-                    />
-                  </svg>
+                <a className="footerSocialBtn" href="https://instagram.com/sanosysalvos.cl" target="_blank" rel="noreferrer" aria-label="Instagram" title="Instagram">
+                  <svg className="footerSocialIcon" viewBox="0 0 24 24" aria-hidden="true" role="presentation"><path fill="currentColor" d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm0 2A3.75 3.75 0 0 0 4 7.75v8.5A3.75 3.75 0 0 0 7.75 20h8.5A3.75 3.75 0 0 0 20 16.25v-8.5A3.75 3.75 0 0 0 16.25 4h-8.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.6-2.15a1.05 1.05 0 1 1 0 2.1 1.05 1.05 0 0 1 0-2.1Z"/></svg>
                 </a>
-
-                <a
-                  className="footerSocialBtn"
-                  href="https://facebook.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Facebook"
-                  title="Facebook"
-                >
+                <a className="footerSocialBtn" href="https://facebook.com/" target="_blank" rel="noreferrer" aria-label="Facebook" title="Facebook">
                   <span className="footerSocialIconText" aria-hidden="true">f</span>
                 </a>
-
-                <a
-                  className="footerSocialBtn"
-                  href="https://tiktok.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="TikTok"
-                  title="TikTok"
-                >
+                <a className="footerSocialBtn" href="https://tiktok.com/" target="_blank" rel="noreferrer" aria-label="TikTok" title="TikTok">
                   <span className="footerSocialIconText" aria-hidden="true">♪</span>
                 </a>
               </div>
             </div>
-
             <div className="footerCol">
               <div className="footerTitle">Contacto</div>
               <a className="footerLink" href="mailto:contacto@sanosysalvos.cl">contacto@sanosysalvos.cl</a>
               <div className="footerText">Chile</div>
             </div>
-
             <div className="footerCol">
               <div className="footerTitle">Navegación</div>
               <div className="footerLinks">
-                <Link className="footerLink" to="/#inicio">Inicio</Link>
-                <Link className="footerLink" to="/#sobre-nosotros">Sobre nosotros</Link>
+                <Link className="footerLink" to="/">Inicio</Link>
+                <a className="footerLink" href="/#sobre-nosotros">Sobre nosotros</a>
                 <Link className="footerLink" to="/preguntas-frecuentes">Preguntas frecuentes</Link>
                 <Link className="footerLink" to="/reportar">Reportar mascota</Link>
               </div>
             </div>
-
             <div className="footerCol">
               <div className="footerTitle">Empresa</div>
               <div className="footerLinks">
-                <Link className="footerLink" to="/#sobre-nosotros">Nosotros</Link>
+                <a className="footerLink" href="/#sobre-nosotros">Nosotros</a>
                 <Link className="footerLink" to="/politicas-de-privacidad">Políticas de privacidad</Link>
                 <Link className="footerLink" to="/terminos-y-condiciones">Términos y condiciones</Link>
               </div>
             </div>
-
           </div>
-
           <div className="footerBottom">
             <div>© {year} Sanos y Salvos</div>
             <div className="footerSmall">Hecho para la comunidad</div>
@@ -1253,7 +1507,6 @@ function App() {
 
   useEffect(() => {
     if (!('geolocation' in navigator)) return
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude
@@ -1261,14 +1514,8 @@ function App() {
         const accuracy = pos.coords.accuracy
         setUserLocation({ lat, lng, accuracy })
       },
-      () => {
-        setUserLocation(null)
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 8000,
-        maximumAge: 60000,
-      },
+      () => { setUserLocation(null) },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
     )
   }, [])
 
@@ -1288,13 +1535,12 @@ function App() {
     }
   }
 
-  // Función asíncrona encargada de consultar al BFF el JSON de la mascota
   async function handleViewDetail(id) {
     if (!id) return
+    navigate('/') 
     setSelectedReportId(id)
     setLoadingDetail(true)
     setError('')
-    
     try {
       const resp = await apiRequest(`/api/reports/${id}/`, { method: 'GET' })
       if (resp.ok && resp.data) {
@@ -1309,13 +1555,16 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    loadReports()
-  }, [])
+  useEffect(() => { loadReports() }, [])
 
   useEffect(() => {
     if (location.pathname === '/register') setAuthMode('register')
     else if (location.pathname === '/login') setAuthMode('login')
+    
+    if (location.pathname !== '/') {
+      setSelectedReportId(null)
+      setDetailedReport(null)
+    }
     setError('')
     setSuccess('')
   }, [location.pathname])
@@ -1341,21 +1590,18 @@ function App() {
       setReportForm((s) => ({ ...s, image_data_url: '', image_file_name: '' }))
       return
     }
-
     if (file.size > 700_000) {
       setError('La imagen es muy grande (máx 700KB)')
       setReportForm((s) => ({ ...s, image_data_url: '', image_file_name: '' }))
       e.target.value = ''
       return
     }
-
     const reader = new FileReader()
     const dataUrl = await new Promise((resolve, reject) => {
       reader.onerror = () => reject(new Error('read_error'))
       reader.onload = () => resolve(String(reader.result || ''))
       reader.readAsDataURL(file)
     })
-
     setReportForm((s) => ({ ...s, image_data_url: dataUrl, image_file_name: file.name }))
   }
 
@@ -1366,7 +1612,6 @@ function App() {
       .sort((a, b) => b.created_ts - a.created_ts)
 
     if (!userLocation) return parsed.slice(0, 12)
-
     const lat0 = userLocation.lat
     const lon0 = userLocation.lng
     const radiusKm = 25
@@ -1458,57 +1703,27 @@ function App() {
         navigate('/login?next=/reportar', { replace: false })
         return
       }
-
       const payload = { ...reportForm }
       Object.keys(payload).forEach((k) => {
         if (typeof payload[k] === 'string') payload[k] = payload[k].trim()
       })
       delete payload.image_file_name
 
-      if (!payload.pet_name) {
-        setError('El nombre es obligatorio')
-        return
-      }
-
-      if (!payload.image_data_url) {
-        setError('La imagen es obligatoria')
-        return
-      }
-
-      if (!payload.species || !payload.region || !payload.comuna) {
-        setError('Completa: especie, región y comuna')
-        return
-      }
-
-      if (payload.latitude == null || payload.longitude == null) {
-        setError('Selecciona una ubicación en el mapa')
-        return
-      }
-
-      // ==========================================
-      // BLOQUE DE VALIDACIÓN DE TELÉFONO ACTUALIZADO
-      // ==========================================
-      if (!payload.contact_phone) {
-        setError('El teléfono de contacto es obligatorio');
-        return;
-      }
-
-      if (!payload.contact_email) {
-        setError('El email de contacto es obligatorio');
-        return;
-      }
+      if (!payload.pet_name) { setError('El nombre es obligatorio'); return; }
+      if (!payload.image_data_url) { setError('La imagen es obligatoria'); return; }
+      if (!payload.species || !payload.region || !payload.comuna) { setError('Completa: especie, región y comuna'); return; }
+      if (payload.latitude == null || payload.longitude == null) { setError('Selecciona una ubicación en el mapa'); return; }
+      if (!payload.contact_phone) { setError('El teléfono de contacto es obligatorio'); return; }
+      if (!payload.contact_email) { setError('El email de contacto es obligatorio'); return; }
 
       if (payload.contact_phone) {
-        // Limpiamos espacios y guiones para hacer la prueba solo con los números reales
         const cleanPhone = payload.contact_phone.replace(/[\s\-]/g, '');
-        // Exigimos que tenga un +, seguido opcionalmente del código y entre 8 y 12 números máximo
         if (!/^\+?[0-9]{8,12}$/.test(cleanPhone)) {
           setError('Ingresa un teléfono válido de entre 8 y 12 números (ej: +56912345678)');
-          window.scrollTo(0, 0); // Sube la pantalla para que el usuario vea el error
+          window.scrollTo(0, 0); 
           return;
         }
       }
-
       if (payload.contact_email) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.contact_email)) {
           setError('Ingresa un email válido de contacto')
@@ -1532,13 +1747,7 @@ function App() {
       setLastCreatedReportId(resp.data?.id ?? null)
       await loadReports()
       setReportForm((s) => ({
-        ...s,
-        pet_name: '',
-        description: '',
-        latitude: null,
-        longitude: null,
-        image_data_url: '',
-        image_file_name: '',
+        ...s, pet_name: '', description: '', latitude: null, longitude: null, image_data_url: '', image_file_name: '',
       }))
     } finally {
       setBusy(false)
@@ -1565,7 +1774,6 @@ function App() {
             element={
               <div className="mainInner mainInnerHome">
                 {selectedReportId ? (
-                  
                   <div className="mainInner">
                     <button 
                       className="miniBtn" 
@@ -1582,7 +1790,6 @@ function App() {
 
                     {detailedReport && (
                       <div className="reportGrid" style={{ marginTop: '20px' }}>
-                        
                         <section className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa', padding: '24px' }}>
                           {detailedReport.image_data_url ? (
                             <img 
@@ -1595,7 +1802,6 @@ function App() {
                           )}
                         </section>
 
-                        
                         <section className="card" style={{ padding: '24px' }}>
                           <h2 style={{ color: 'var(--teal-500)', fontSize: '2.5rem', marginBottom: '16px', marginTop: 0 }}>
                             {detailedReport.pet_name || 'Mascota sin nombre'}
@@ -1649,7 +1855,6 @@ function App() {
                     )}
                   </div>
                 ) : (
-                  
                   <>
                     <div className="fullBleed">
                       <section id="inicio" className="section">
@@ -1673,17 +1878,35 @@ function App() {
                         </div>
                       </section>
                     </div>
-                    
-                    <RecentReportsCarousel 
-                      title="Reportes recientes cerca de ti" 
-                      reports={nearbyRecentReports} 
-                      onMarkFound={markReportAsFound} 
-                      onCardClick={handleViewDetail}
-                    />
+                    <RecentReportsCarousel title="Reportes recientes cerca de ti" reports={nearbyRecentReports} onMarkFound={markReportAsFound} onCardClick={handleViewDetail}/>
                   </>
                 )}
 
-                <section id="sobre-nosotros" className="section" />
+                
+                <section id="sobre-nosotros" className="section" style={{ padding: '60px 24px', backgroundColor: '#f8f9fa', borderRadius: '12px', marginTop: '60px', border: '1px solid #e3e6e8' }}>
+                  <h2 style={{ color: 'var(--teal-500)', fontSize: '2.5rem', textAlign: 'center', marginBottom: '20px', marginTop: 0 }}>Sobre Nosotros</h2>
+                  <p style={{ fontSize: '1.15rem', color: '#444', textAlign: 'center', maxWidth: '800px', margin: '0 auto 40px auto', lineHeight: '1.6' }}>
+                    <strong>Sanos y Salvos</strong> es una plataforma web  nacida para ayudar al publico, Nos dedicamos a darles la oportunidad a las comunidades de Chile de un canal de comunicación directo, usando tecnologías modernas para el avistamiento y reencuentro amoroso de mascotas perdidas.
+                  </p>
+                  <div style={{ display: 'flex', gap: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div className="card" style={{ flex: '1 1 250px', padding: '24px', textAlign: 'center', background: '#fff' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🛡️</div>
+                      <h3 style={{ color: '#064a55', margin: '0 0 10px 0' }}>Filtro Supervisado</h3>
+                      <p className="mutedText" style={{ margin: 0 }}>Cada aviso pasa por una cola de revisión para asegurar datos verídicos</p>
+                    </div>
+                    <div className="card" style={{ flex: '1 1 250px', padding: '24px', textAlign: 'center', background: '#fff' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📍</div>
+                      <h3 style={{ color: '#064a55', margin: '0 0 10px 0' }}>Geolocalización</h3>
+                      <p className="mutedText" style={{ margin: 0 }}>Marcadores dinámicos e intuitivos impulsados por mapas interactivos </p>
+                    </div>
+                    <div className="card" style={{ flex: '1 1 250px', padding: '24px', textAlign: 'center', background: '#fff' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>🤝</div>
+                      <h3 style={{ color: '#064a55', margin: '0 0 10px 0' }}>Acción Directa</h3>
+                      <p className="mutedText" style={{ margin: 0 }}>Facilitamos llamadas de contacto inmediatas y alertas cercanas basadas en el radio de tu ubicación local.</p>
+                    </div>
+                  </div>
+                </section>
+
               </div>
             }
           />
@@ -1692,11 +1915,9 @@ function App() {
             path="/reportar"
             element={
               <div className="mainInner">
-               
                 <div style={{ marginBottom: '16px' }}>
                   <Link className="miniBtn" to="/">← Volver al inicio</Link>
                 </div>
-
                 {!user ? (
                   <section className="card authCard">
                     <h2 className="cardTitle">Inicia sesión para reportar</h2>
@@ -1709,7 +1930,6 @@ function App() {
                     <section className="card reportFormCard">
                       <h2 className="cardTitle">Reportar mascota perdida</h2>
                       {error ? <div className="formError">{error}</div> : null}
-                      
                       
                       {success ? (
                         <div className="formSuccess" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1728,93 +1948,51 @@ function App() {
                         <form className="form" onSubmit={submitReport}>
                           <label className="field">
                             <span>Nombre *</span>
-                            <input
-                              value={reportForm.pet_name}
-                              onChange={(e) => setReportForm((s) => ({ ...s, pet_name: e.target.value }))}
-                            />
+                            <input value={reportForm.pet_name} onChange={(e) => setReportForm((s) => ({ ...s, pet_name: e.target.value }))} />
                           </label>
                           <label className="field">
                             <span>Especie</span>
-                            <select
-                              value={reportForm.species}
-                              onChange={(e) => setReportForm((s) => ({ ...s, species: e.target.value }))}
-                            >
+                            <select value={reportForm.species} onChange={(e) => setReportForm((s) => ({ ...s, species: e.target.value }))}>
                               <option value="">Selecciona…</option>
-                              {SPECIES_OPTIONS.map((s) => (
-                                <option key={s} value={s}>{s}</option>
-                              ))}
+                              {SPECIES_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                             </select>
                           </label>
                           <label className="field">
                             <span>Región</span>
-                            <select
-                              value={reportForm.region}
-                              onChange={(e) => onSelectRegion(e.target.value)}
-                            >
+                            <select value={reportForm.region} onChange={(e) => onSelectRegion(e.target.value)}>
                               <option value="">Selecciona…</option>
-                              {REGION_COMUNAS.map((r) => (
-                                <option key={r.region} value={r.region}>{r.region}</option>
-                              ))}
+                              {REGION_COMUNAS.map((r) => <option key={r.region} value={r.region}>{r.region}</option>)}
                             </select>
                           </label>
                           <label className="field">
                             <span>Comuna</span>
-                            <select
-                              value={reportForm.comuna}
-                              onChange={(e) => setReportForm((s) => ({ ...s, comuna: e.target.value }))}
-                              disabled={!reportForm.region}
-                            >
+                            <select value={reportForm.comuna} onChange={(e) => setReportForm((s) => ({ ...s, comuna: e.target.value }))} disabled={!reportForm.region}>
                               <option value="">{reportForm.region ? 'Selecciona…' : 'Elige región primero'}</option>
-                              {getComunasForRegion(reportForm.region).map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                              ))}
+                              {getComunasForRegion(reportForm.region).map((c) => <option key={c} value={c}>{c}</option>)}
                             </select>
                           </label>
                           <label className="field">
                             <span>Imagen *</span>
                             <input type="file" accept="image/*" onChange={onImageChange} required />
-                            {reportForm.image_file_name ? (
-                              <span className="fileHint">Seleccionada: {reportForm.image_file_name}</span>
-                            ) : null}
+                            {reportForm.image_file_name ? <span className="fileHint">Seleccionada: {reportForm.image_file_name}</span> : null}
                           </label>
                           <label className="field">
                             <span>Descripción</span>
-                            <input
-                              value={reportForm.description}
-                              onChange={(e) => setReportForm((s) => ({ ...s, description: e.target.value }))}
-                              placeholder="Se perdió cerca de…"
-                            />
+                            <input value={reportForm.description} onChange={(e) => setReportForm((s) => ({ ...s, description: e.target.value }))} placeholder="Se perdió cerca de…" />
                           </label>
-
                           <label className="field">
                             <span>Contacto (teléfono) *</span>
-                            <input
-                              type="tel"
-                              value={reportForm.contact_phone}
-                              onChange={(e) => setReportForm((s) => ({ ...s, contact_phone: e.target.value }))}
-                              placeholder="+56912345678"
-                              maxLength={12}
-                            />
+                            <input type="tel" value={reportForm.contact_phone} onChange={(e) => setReportForm((s) => ({ ...s, contact_phone: e.target.value }))} placeholder="+56912345678" maxLength={15} />
                           </label>
                           <label className="field">
                             <span>Contacto (email) *</span>
-                            <input
-                              type="email"
-                              value={reportForm.contact_email}
-                              onChange={(e) => setReportForm((s) => ({ ...s, contact_email: e.target.value }))}
-                              placeholder="correo@ejemplo.com"
-                            />
+                            <input type="email" value={reportForm.contact_email} onChange={(e) => setReportForm((s) => ({ ...s, contact_email: e.target.value }))} placeholder="correo@ejemplo.com" />
                           </label>
 
                           <div className="mutedText">
-                            Ubicación: {reportForm.latitude != null && reportForm.longitude != null
-                              ? `${reportForm.latitude.toFixed(6)}, ${reportForm.longitude.toFixed(6)}`
-                              : 'haz click en el mapa'}
+                            Ubicación: {reportForm.latitude != null && reportForm.longitude != null ? `${reportForm.latitude.toFixed(6)}, ${reportForm.longitude.toFixed(6)}` : 'haz click en el mapa'}
                           </div>
-
-                          <button className="primaryBtn" type="submit" disabled={busy}>
-                            Publicar reporte
-                          </button>
+                          <button className="primaryBtn" type="submit" disabled={busy}>Publicar reporte</button>
                         </form>
                       )}
                     </section>
@@ -1822,30 +2000,12 @@ function App() {
                     <section className="card reportMapCard">
                       <div className="mapWrap reportMapWrap">
                         <MapContainer className="map reportMap" center={reportCenter} zoom={reportZoom} scrollWheelZoom>
-                          <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          />
+                          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                           <Recenter center={reportCenter} zoom={reportZoom} />
                           <ReportsMarkers reports={reports} highlightId={lastCreatedReportId} />
-                          <LocationPicker
-                            onPick={({ latitude, longitude }) =>
-                              setReportForm((s) => ({ ...s, latitude, longitude }))
-                            }
-                          />
-                          {userLocation ? (
-                            <CircleMarker
-                              center={[userLocation.lat, userLocation.lng]}
-                              radius={6}
-                              pathOptions={{ color: '#064a55', fillColor: '#f4a340', fillOpacity: 1 }}
-                            />
-                          ) : null}
-                          {reportForm.latitude != null && reportForm.longitude != null ? (
-                            <Marker
-                              position={[reportForm.latitude, reportForm.longitude]}
-                              icon={getPetIcon(reportForm.species, { highlight: true })}
-                            />
-                          ) : null}
+                          <LocationPicker onPick={({ latitude, longitude }) => setReportForm((s) => ({ ...s, latitude, longitude }))} />
+                          {userLocation ? <CircleMarker center={[userLocation.lat, userLocation.lng]} radius={6} pathOptions={{ color: '#064a55', fillColor: '#f4a340', fillOpacity: 1 }} /> : null}
+                          {reportForm.latitude != null && reportForm.longitude != null ? <Marker position={[reportForm.latitude, reportForm.longitude]} icon={getPetIcon(reportForm.species, { highlight: true })} /> : null}
                         </MapContainer>
                       </div>
                     </section>
@@ -1855,25 +2015,22 @@ function App() {
             }
           />
 
+          <Route path="/perfil" element={<ProfilePage user={user} reports={reports} onLogout={doLogout} busy={busy} onMarkFound={markReportAsFound} onViewDetail={handleViewDetail} />} />
+
+          
+          <Route path="/preguntas-frecuentes" element={<PreguntasFrecuentesPage user={user} isAdmin={isAdmin} />} />
+
           <Route path="/login" element={
             <div className="mainInner">
               <section className="card authCard">
                 <h2 className="cardTitle">Iniciar sesión</h2>
                 {error ? <div className="formError">{error}</div> : null}
                 <form className="form" onSubmit={submitAuth}>
-                  <label className="field">
-                    <span>Usuario</span>
-                    <input value={authForm.username} onChange={(e) => setAuthForm((s) => ({ ...s, username: e.target.value }))} autoComplete="username" />
-                  </label>
-                  <label className="field">
-                    <span>Contraseña</span>
-                    <input type="password" value={authForm.password} onChange={(e) => setAuthForm((s) => ({ ...s, password: e.target.value }))} autoComplete="current-password" />
-                  </label>
+                  <label className="field"><span>Usuario</span><input value={authForm.username} onChange={(e) => setAuthForm((s) => ({ ...s, username: e.target.value }))} autoComplete="username" /></label>
+                  <label className="field"><span>Contraseña</span><input type="password" value={authForm.password} onChange={(e) => setAuthForm((s) => ({ ...s, password: e.target.value }))} autoComplete="current-password" /></label>
                   <button className="primaryBtn" type="submit" disabled={busy}>Entrar</button>
                 </form>
-                <div className="mutedText">
-                  ¿No tienes cuenta? <Link to={`/register${location.search || ''}`} onClick={() => setAuthMode('register')}>Regístrate</Link>
-                </div>
+                <div className="mutedText">¿No tienes cuenta? <Link to={`/register${location.search || ''}`} onClick={() => setAuthMode('register')}>Regístrate</Link></div>
               </section>
             </div>
           } />
@@ -1884,33 +2041,18 @@ function App() {
                 <h2 className="cardTitle">Registro</h2>
                 {error ? <div className="formError">{error}</div> : null}
                 <form className="form" onSubmit={submitAuth}>
-                  <label className="field">
-                    <span>Usuario</span>
-                    <input value={authForm.username} onChange={(e) => setAuthForm((s) => ({ ...s, username: e.target.value }))} autoComplete="username" />
-                  </label>
-                  <label className="field">
-                    <span>Contraseña</span>
-                    <input type="password" value={authForm.password} onChange={(e) => setAuthForm((s) => ({ ...s, password: e.target.value }))} autoComplete="new-password" />
-                  </label>
-                  <label className="field">
-                    <span>Email</span>
-                    <input type="email" value={authForm.email} onChange={(e) => setAuthForm((s) => ({ ...s, email: e.target.value }))} autoComplete="email" />
-                  </label>
+                  <label className="field"><span>Usuario</span><input value={authForm.username} onChange={(e) => setAuthForm((s) => ({ ...s, username: e.target.value }))} autoComplete="username" /></label>
+                  <label className="field"><span>Contraseña</span><input type="password" value={authForm.password} onChange={(e) => setAuthForm((s) => ({ ...s, password: e.target.value }))} autoComplete="new-password" /></label>
+                  <label className="field"><span>Email</span><input type="email" value={authForm.email} onChange={(e) => setAuthForm((s) => ({ ...s, email: e.target.value }))} autoComplete="email" /></label>
                   <button className="primaryBtn" type="submit" disabled={busy}>Crear cuenta</button>
                 </form>
-                <div className="mutedText">
-                  ¿Ya tienes cuenta? <Link to={`/login${location.search || ''}`} onClick={() => setAuthMode('login')}>Inicia sesión</Link>
-                </div>
+                <div className="mutedText">¿Ya tienes cuenta? <Link to={`/login${location.search || ''}`} onClick={() => setAuthMode('login')}>Inicia sesión</Link></div>
               </section>
             </div>
           } />
 
-        
           <Route path="/politicas-de-privacidad" element={<div className="mainInner"><section className="card"><h2 className="cardTitle">Políticas de privacidad</h2><div className="mutedText">Contenido en construcción.</div></section></div>} />
           <Route path="/terminos-y-condiciones" element={<div className="mainInner"><section className="card"><h2 className="cardTitle">Términos y condiciones</h2><div className="mutedText">Contenido en construcción.</div></section></div>} />
-          <Route path="/preguntas-frecuentes" element={<div className="mainInner"><section className="card"><h2 className="cardTitle">Preguntas frecuentes</h2><div className="mutedText">Contenido en construcción.</div></section></div>} />
-
-          
           <Route path="*" element={<Navigate to="/" replace />} />
 
       </Route>
