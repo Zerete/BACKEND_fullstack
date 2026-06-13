@@ -123,6 +123,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Corrección de puertos:
 SECURITY_SERVICE_BASE_URL = os.environ.get('SECURITY_SERVICE_BASE_URL', 'http://127.0.0.1:8002')
 MASCOTAS_SERVICE_BASE_URL = os.environ.get('MASCOTAS_SERVICE_BASE_URL', 'http://127.0.0.1:8001')
+ADOPTIONS_SERVICE_BASE_URL = os.environ.get('ADOPTIONS_SERVICE_BASE_URL', 'http://127.0.0.1:8003')
 
 CORS_ALLOWED_ORIGINS = [
     origin.strip()

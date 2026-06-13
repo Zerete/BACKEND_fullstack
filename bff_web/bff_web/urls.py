@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path
 
 from .api_views import (
+    adoption_detail_proxy,
+    adoptions_proxy,
     auth_login,
     auth_logout,
     auth_me,
@@ -38,4 +40,6 @@ urlpatterns = [
     path('api/auth/users/', auth_users),
     path('api/reports/', reports_proxy),
     path('api/reports/<int:report_id>/', report_detail_proxy),
+    path('api/adoptions/', adoptions_proxy),
+    path('api/adoptions/<int:adoption_id>/', adoption_detail_proxy),
 ]

@@ -4,12 +4,13 @@ Este proyecto es una aplicación full-stack basada en una **arquitectura de micr
 
 ## 🚀 Arquitectura del Sistema
 
-La solución se divide en cuatro componentes principales que interactúan a través de una red local:
+La solución se divide en cinco componentes principales que interactúan a través de una red local:
 
 1. **Frontend (React + Vite):** Interfaz de usuario dinámica con mapas georreferenciados.
 2. **BFF / API Gateway (Django):** Orquestador que centraliza las peticiones del frontend y las deriva a los servicios correspondientes.
 3. **MS Seguridad (Django):** Servicio encargado de la autenticación JWT, registro de usuarios y gestión de roles (RBAC).
 4. **MS Mascotas (Django):** Servicio de persistencia y lógica de negocio para los reportes de mascotas.
+5. **MS Adopciones (Django):** Servicio encargado de gestionar publicaciones de mascotas en adopción, ya sea de albergues o de usuarios particulares.
 
 ## 🛠️ Tecnologías Utilizadas
 
@@ -49,7 +50,13 @@ cd bff_web
 python manage.py migrate
 python manage.py runserver 8000
 
-# 4. Levantar el Frontend (React)
+# 4. Configurar y Levantar el Microservicio de Adopciones (Puerto 8003)
+cd ..
+cd ms_adopciones
+python manage.py migrate
+python manage.py runserver 8003
+
+# 5. Levantar el Frontend (React)
 cd ..
 cd frontend
 npm install
