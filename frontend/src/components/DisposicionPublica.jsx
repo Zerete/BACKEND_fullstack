@@ -17,7 +17,8 @@ export default function DisposicionPublica({ user, isAdmin, busy, onLogout, year
             <Link className="navLink" to="/">Inicio</Link>
             <Link className="navLink" to="/mapa">Mapa</Link>
             <Link className="navLink" to="/adopciones">Adopciones</Link>
-            <a className="navLink" href="/#sobre-nosotros">Voluntarios</a>
+            {/* AQUÍ ESTÁ EL CAMBIO: Se usa <Link> en lugar de <a> */}
+            <Link className="navLink" to="/voluntarios">Voluntarios</Link>
             <Link className="navLink" to="/preguntas-frecuentes">Consejos</Link>
           </nav>
 

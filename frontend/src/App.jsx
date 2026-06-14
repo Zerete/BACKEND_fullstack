@@ -231,7 +231,7 @@ function App() {
             username: authForm.username, 
             password: authForm.password, 
             email: authForm.email, 
-            rut: authForm.rut // <-- Aquí agregamos el RUT para enviarlo
+            rut: authForm.rut 
           }
         : { username: authForm.username, password: authForm.password }
 
@@ -464,6 +464,10 @@ function App() {
             />
           }
         />
+        
+        {/* === NUEVA RUTA DE VOLUNTARIOS AQUÍ === */}
+        <Route path="/voluntarios" element={<div className="mainInner"><section className="card"><h2 className="cardTitle">Voluntarios</h2><div className="mutedText">Página de voluntarios en construcción. ¡Pronto podrás unirte a nuestro equipo!</div></section></div>} />
+        
         <Route path="/politicas-de-privacidad" element={<div className="mainInner"><section className="card"><h2 className="cardTitle">Politicas de privacidad</h2><div className="mutedText">Contenido en construccion.</div></section></div>} />
         <Route path="/terminos-y-condiciones" element={<div className="mainInner"><section className="card"><h2 className="cardTitle">Terminos y condiciones</h2><div className="mutedText">Contenido en construccion.</div></section></div>} />
         <Route path="*" element={<Navigate to="/" replace />} />
